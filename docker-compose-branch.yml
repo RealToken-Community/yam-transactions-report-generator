@@ -6,6 +6,7 @@ services:
       - yam-report
       - traefik-realt
     volumes:
+      - ./config.json:/app/config.json
       - ./YAM_events.db:/app/YAM_events.db
     labels:
       - 'traefik.enable=true'

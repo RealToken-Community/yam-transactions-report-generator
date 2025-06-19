@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# # Vérifier si le fichier config.json existe
-# if [ ! -f "config.json" ]; then
-#     echo "Erreur: config.json non trouvé. Veuillez monter le fichier config.json dans le conteneur."
-#     exit 1
-# fi
+# Vérifier si le fichier config.json existe
+if [ ! -f "config.json" ]; then
+    echo "Erreur: config.json non trouvé. Veuillez monter le fichier config.json dans le conteneur."
+    exit 1
+fi
 
 # Initialiser le module d'indexation si la base de données n'existe pas
 if [ ! -f "YAM_events.db" ]; then
