@@ -1,6 +1,6 @@
 services:
   api:
-    image: ${DOCKER_REGISTRY}/yam-report-api:${DOCKER_BRANCH}
+    image: ${DOCKER_REGISTRY}/yam-report:api
     container_name: ${DOCKER_BRANCH}-yam_report_api
     networks:
       - yam-report
@@ -9,11 +9,11 @@ services:
       - ./YAM_events.db:/app/YAM_events.db
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.yam-report-api-${DOCKER_BRANCH}.rule=Host(`yam-reporter.${HOSTNAME}`) && PathPrefix(`/api`)'
+      - 'traefik.http.routers.yam-report-api-${DOCKER_BRANCH}.rule=Host(`yam-report.${HOSTNAME}`) && PathPrefix(`/api`)'
       - 'traefik.http.services.yam-report-api-${DOCKER_BRANCH}.loadbalancer.server.port=5000'
     restart: unless-stopped
   ui:
-    image: ${DOCKER_REGISTRY}/yam-report-ui:${DOCKER_BRANCH}
+    image: ${DOCKER_REGISTRY}/yam-report:ui
     container_name: ${DOCKER_BRANCH}-yam_report_ui
     networks:
       - yam-report
@@ -22,7 +22,7 @@ services:
       - ./config.json:/usr/share/nginx/html/config.json
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.yam-report-ui-${DOCKER_BRANCH}.rule=Host(`yam-reporter.${HOSTNAME}`) && PathPrefix(`/`)'
+      - 'traefik.http.routers.yam-report-ui-${DOCKER_BRANCH}.rule=Host(`yam-report.${HOSTNAME}`) && PathPrefix(`/`)'
       - 'traefik.http.services.yam-report-ui-${DOCKER_BRANCH}.loadbalancer.server.port=80'
     restart: unless-stopped
 

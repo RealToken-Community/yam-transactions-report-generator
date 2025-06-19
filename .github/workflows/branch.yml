@@ -61,7 +61,7 @@ jobs:
           context: .
           file: Dockerfile-api
           push: true
-          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report-api:${{ github.ref_name }}
+          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report:api
 
       - name: Build and push UI image
         uses: docker/build-push-action@v5
@@ -69,7 +69,7 @@ jobs:
           context: .
           file: Dockerfile-ui
           push: true
-          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report-ui:${{ github.ref_name }}
+          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report:ui
 
       - name: Configure SSH
         run: |
