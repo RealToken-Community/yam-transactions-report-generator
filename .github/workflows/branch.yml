@@ -1,24 +1,121 @@
-- name: Setup Python
-  uses: actions/setup-python@v5.6.0
-  with:
-    # Version range or exact version of Python or PyPy to use, using SemVer's version range syntax. Reads from .python-version if unset.
-    python-version: # optional
-    # File containing the Python version to use. Example: .python-version
-    python-version-file: # optional
-    # Used to specify a package manager for caching in the default directory. Supported values: pip, pipenv, poetry.
-    cache: # optional
-    # The target architecture (x86, x64, arm64) of the Python or PyPy interpreter.
-    architecture: # optional
-    # Set this option if you want the action to check for the latest available version that satisfies the version spec.
-    check-latest: # optional
-    # The token used to authenticate when fetching Python distributions from https://github.com/actions/python-versions. When running this action on github.com, the default value is sufficient. When running on GHES, you can pass a personal access token for github.com if you are experiencing rate limiting.
-    token: # optional, default is ${{ github.server_url == 'https://github.com' && github.token || '' }}
-    # Used to specify the path to dependency files. Supports wildcards or a list of file names for caching multiple dependencies.
-    cache-dependency-path: # optional
-    # Set this option if you want the action to update environment variables.
-    update-environment: # optional, default is true
-    # When 'true', a version range passed to 'python-version' input will match prerelease versions if no GA versions are found. Only 'x.y' version range is supported for CPython.
-    allow-prereleases: # optional
-    # When 'true', use the freethreaded version of Python.
-    freethreaded: # optional
-          
+name: Test and deploy to branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        run: |
+          cd UI
+          npm install
+
+      - name: Build frontend
+        run: |
+          cd UI
+          npm run build
+
+      # Optionnel : Ajouter des tests ici si disponibles
+      # - name: Run backend tests
+      #   run: pytest
+
+  deploy:
+    name: Deploy to branch
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASSWD }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile-api
+          push: true
+          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report-api:${{ github.ref_name }}
+
+      - name: Build and push UI image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile-ui
+          push: true
+          tags: ${{ secrets.DOCKER_REGISTRY }}/yam-report-ui:${{ github.ref_name }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName $SSH_HOST
+            User $SSH_USER
+            Port $SSH_PORT
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+
+      - name: Update branch environment
+        env:
+          DOCKER_BRANCH: ${{ github.ref_name }}
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+          DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
+          DOCKER_PASSWD: ${{ secrets.DOCKER_PASSWD }}
+          DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
+        run: |
+          if [[ "$DOCKER_BRANCH" == "main" ]]; then
+            export HOSTNAME="yam-report.$DOMAIN_URL"
+          elif [[ "$DOCKER_BRANCH" == "staging" ]]; then
+            export HOSTNAME="yam-report.$DOCKER_BRANCH.$DOMAIN_URL"
+          else
+            export HOSTNAME="yam-report.$DOCKER_BRANCH.$DOMAIN_URL"
+          fi
+
+          ssh staging <<EOF
+            set -euxo pipefail
+            export DOCKER_BRANCH="$DOCKER_BRANCH"
+            export DOCKER_REGISTRY="$DOCKER_REGISTRY"
+
+            cd /var/docker/yam-report/$DOCKER_BRANCH
+            git pull origin $DOCKER_BRANCH
+            docker compose --file docker-compose-branch.yml pull
+            docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWD" $DOCKER_REGISTRY
+
+            HOSTNAME="$HOSTNAME" \
+            docker compose --project-name $DOCKER_BRANCH-yam-report --file docker-compose-branch.yml up -d
+          EOF
