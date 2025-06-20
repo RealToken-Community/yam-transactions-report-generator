@@ -107,8 +107,18 @@ python3 -m yam_indexing_module.main_indexing
 python3 pdf_generator_module/start_api.py
 ```
 You can verify that the API server is running by visiting the following health check endpoint in your browser:
-```http://[your-domain]:[api-port]/api/health```
->**Note**: You can configure the API port in the `config.json` file. Make sure the API port is open both on your VPS firewall (e.g., UFW, firewalld) and on your hosting provider's control panel (e.g., DigitalOcean, AWS Security Groups), so that external clients can reach it.
+```http://[your-domain]:[public-api-port]/api/health```
+> **Note**:
+> - The **internal port** on which the API actually listens is defined in the `config.json` file under the key `api_port`. This is the port your API process binds to inside the container or on the server.
+>
+> - The **public API port**, i.e., the one exposed to the outside world and used by the frontend (UI), is defined in the environment file:
+>   - In development, it's set in `.env.development` as `VITE_API_PORT`
+>   - In production, it's set in `.env.production` as `VITE_API_PORT`
+>
+> - In development, the `VITE_API_PORT` value typically **matches** the `api_port` in `config.json`, since no reverse proxy is used (e.g., both set to `5000`).
+>
+> - In production, they may **differ**: the API might listen internally on a port like `5000` (from `config.json`), while a reverse proxy like Nginx forwards public traffic from port `443` (or another) to this internal port.  
+>   The frontend uses `VITE_API_PORT` to know which port to call.
 
 #### Start the Web Interface
 The frontend is built as static files located in the ```UI/dist``` directory after running ```npm run build```.
