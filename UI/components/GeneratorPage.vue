@@ -393,18 +393,6 @@ export default {
       window.URL.revokeObjectURL(url)
     }
 
-    // Get API port from configuration file
-    const getApiPort = async () => {
-      try {
-        const configResponse = await fetch('../config.json')
-        const config = await configResponse.json()
-        return config.api_port || 5000
-      } catch (error) {
-        console.warn('Could not load config.json, using default port 5000:', error)
-        return 5000
-      }
-    }
-
     // ===== MAIN FORM SUBMISSION =====
     
     // Handle form submission and PDF generation
@@ -431,10 +419,16 @@ export default {
       loading.value = true
       
       try {
-        // Build API request URL
-        const apiPort = await getApiPort()
-        const currentDomain = window.location.origin
-        const apiUrl = `${currentDomain.replace(/:\d+$/, '')}:${apiPort}/api/generate-report`
+        // Build API request URL using .env variable
+        const port = import.meta.env.VITE_API_PORT || '443'
+        const origin = window.location.origin
+        
+        // Remove port from origin (e.g., http://localhost:3000 => http://localhost)
+        const domain = origin.replace(/:\d+$/, '')
+        
+        // If using default HTTPS or HTTP ports, don't add the port in the URL
+        const showPort = !['80', '443'].includes(port)
+        const apiUrl = `${domain}${showPort ? `:${port}` : ''}/api/generate-report`
         
         // Prepare request payload for API
         const requestBody = {
