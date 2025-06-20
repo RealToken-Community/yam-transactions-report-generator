@@ -20,7 +20,6 @@ services:
       - yam-report
       - traefik-realt
     volumes:
-      - ./config.json:/usr/share/nginx/html/config.json
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.yam-report-ui-${DOCKER_BRANCH}.rule=Host(`${HOSTNAME}`) && PathPrefix(`/`)'
