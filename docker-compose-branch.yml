@@ -19,7 +19,6 @@ services:
     networks:
       - yam-report
       - traefik-realt
-    volumes:
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.yam-report-ui-${DOCKER_BRANCH}.rule=Host(`${HOSTNAME}`) && PathPrefix(`/`)'
