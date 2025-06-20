@@ -7,7 +7,7 @@ services:
     ports:
       - "3599:5000"
     volumes:
-      # - ./config.json:/app/config.json
+      - ./config.json:/app/config.json
       - ./YAM_events.db:/app/YAM_events.db
     restart: always
   ui:
@@ -18,5 +18,4 @@ services:
     ports:
       - "3598:80"
     volumes:
-      - ./config.json:/usr/share/nginx/html/config.json
     restart: always
