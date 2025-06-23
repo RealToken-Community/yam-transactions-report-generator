@@ -18,8 +18,7 @@ def _decode_log_offer_created(log: LogReceipt) -> Dict[str, Any]:
     buyer_token = normalize_ethereum_address(log['topics'][2].hex())
     offer_id = _hex_to_decimal(log['topics'][3].hex())
     
-    # Remove the '0x' prefix from data field
-    hex_data = log['data'].hex()[2:]
+    hex_data = log['data'].hex()
 
     # Extract additional data from the data field
     seller_address = normalize_ethereum_address('0x' + hex_data[:64])
@@ -60,14 +59,13 @@ def _decode_log_offer_accepted(log: LogReceipt) -> Dict[str, Any]:
     seller_address = normalize_ethereum_address(log['topics'][2].hex())
     buyer_address = normalize_ethereum_address(log['topics'][3].hex())
     
-    # Remove the '0x' prefix from data field
-    hex_data = log['data'].hex()[2:]
+    hex_data = log['data'].hex()
 
     # Extract additional data from the data field
     offer_token = normalize_ethereum_address('0x' + hex_data[:64])
     buyer_token = normalize_ethereum_address('0x' + hex_data[64:128])
-    price = _hex_to_decimal(hex_data[129:192])
-    amount = _hex_to_decimal(hex_data[193:])
+    price = _hex_to_decimal(hex_data[128:192])
+    amount = _hex_to_decimal(hex_data[192:256])
 
     # Create event data dictionary
     custom_data_log = {
@@ -102,8 +100,7 @@ def _decode_log_offer_updated(log: LogReceipt) -> Dict[str, Any]:
     new_price = _hex_to_decimal(log['topics'][2].hex())
     new_amount = _hex_to_decimal(log['topics'][3].hex())
     
-    # Remove the '0x' prefix from data field
-    hex_data = log['data'].hex()[2:]
+    hex_data = log['data'].hex()
 
     # Extract additional data from the data field
     old_price = _hex_to_decimal(hex_data[:64])
