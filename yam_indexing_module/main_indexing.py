@@ -63,11 +63,15 @@ def main_indexing():
         while True:
         
             start_time = time.time()
+
+            success = False
         
             for attempt in range(MAX_RETRIES_PER_BLOCK_RANGE):
             
                 try:
                     raw_logs = get_raw_logs_yam(w3, yam_contract_address, from_block, to_block)
+                    success = True
+                    break # leave the for loop if success
                 
                 except Exception as e:
                     
@@ -80,8 +84,12 @@ def main_indexing():
                         old_indice = w3_indice
                         w3_indice = (w3_indice + 1) % len(w3_urls) # This will give you the sequence: 0 → 1 → 2 → ... → n → 0 → 1 → 2 → ... → n → 0 ...
                         w3 = Web3(Web3.HTTPProvider(w3_urls[w3_indice]))
-                        logger.info(f"Blocks retrieval failed too many times. Changing from w3 RPC n°{old_indice + 1} to w3 RPC n°{w3_indice + 1}")
+                        logger.info(f"Blocks retrieval failed too many times. Changing from w3 RPC n°{old_indice + 1} to w3 RPC n°{w3_indice + 1} [{w3.provider.endpoint_uri.split('//')[1].rsplit('/', 1)[0]}]")
                         continue
+            
+            if not success:
+                logger.info(f"All attempts with the same RPC [{w3.provider.endpoint_uri.split('//')[1].rsplit('/', 1)[0]}] failed.")
+                continue
             
             decoded_logs = decode_raw_logs_yam(raw_logs)
         
@@ -124,8 +132,14 @@ def main_indexing():
         logger.info("Received Ctrl+C, shutting down the indexing service...")
         print("Process stopped by user")
     except Exception as e:
-            logger.error(f"Indexing loop failed with error: {str(e)}", exc_info=True)
-            print(f"Indexing loop failed with error: {str(e)}")
+        logger.error(f"Indexing loop failed with error: {str(e)}", exc_info=True)
+        print(f"Indexing loop failed with error: {str(e)}")
 
 if __name__ == "__main__":
-    main_indexing()
+    while True:
+        try:
+            main_indexing()
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.exception("Fatal error in main_indexing. Restarting in 30 seconds...")
+            time.sleep(30)
