@@ -131,6 +131,7 @@ def main_indexing():
     except KeyboardInterrupt:
         logger.info("Received Ctrl+C, shutting down the indexing service...")
         print("Process stopped by user")
+        raise
     except Exception as e:
         logger.error(f"Indexing loop failed with error: {str(e)}", exc_info=True)
         print(f"Indexing loop failed with error: {str(e)}")
@@ -139,6 +140,8 @@ if __name__ == "__main__":
     while True:
         try:
             main_indexing()
+        except KeyboardInterrupt:
+            break
         except Exception as e:
             logger = logging.getLogger(__name__)
             logger.exception("Fatal error in main_indexing. Restarting in 30 seconds...")
