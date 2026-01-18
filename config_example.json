@@ -1,0 +1,12 @@
+{
+    "w3_urls": [
+        "https://gnosis-mainnet.blastapi.io/...",
+        "https://lb.nodies.app/v1/...",
+        "https://gnosis-mainnet.core.chainstack.com/..."
+      ],
+    "db_path": "YAM_events.db",
+    "api_port" : 5000,
+    "realtokens_api_url" : "https://api.realtoken.community/v1/token",
+    "the_graph_api_key" : "...",
+    "subgraph_url" : "https://gateway.thegraph.com/api/subgraphs/id/7xsjkvdDtLJuVkwCigMaBqGqunBvhYjUSPFhpnGL1rvu"
+}

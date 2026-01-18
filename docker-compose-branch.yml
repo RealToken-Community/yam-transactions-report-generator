@@ -1,0 +1,31 @@
+services:
+  api:
+    image: ${DOCKER_REGISTRY}/yam-report:api
+    container_name: ${DOCKER_BRANCH}-yam_report_api
+    networks:
+      - yam-report
+      - traefik-realt
+    volumes:
+      - ./config.json:/app/config.json
+      - ./YAM_events.db:/app/YAM_events.db
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.yam-report-api-${DOCKER_BRANCH}.rule=Host(`${HOSTNAME}`) && PathPrefix(`/api`)'
+      - 'traefik.http.services.yam-report-api-${DOCKER_BRANCH}.loadbalancer.server.port=5000'
+    restart: unless-stopped
+  ui:
+    image: ${DOCKER_REGISTRY}/yam-report:ui
+    container_name: ${DOCKER_BRANCH}-yam_report_ui
+    networks:
+      - yam-report
+      - traefik-realt
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.yam-report-ui-${DOCKER_BRANCH}.rule=Host(`${HOSTNAME}`) && PathPrefix(`/`)'
+      - 'traefik.http.services.yam-report-ui-${DOCKER_BRANCH}.loadbalancer.server.port=80'
+    restart: unless-stopped
+
+networks:
+  yam-report:
+  traefik-realt:
+    external: true

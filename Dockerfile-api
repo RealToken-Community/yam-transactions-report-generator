@@ -1,0 +1,28 @@
+FROM python:3.9-slim
+
+# Créer et définir le répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY requirements.txt .
+
+# Installer les dépendances Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copier le reste du code
+COPY . .
+
+# Initialiser la base de données
+# RUN python3 -m yam_indexing_module.initialize_indexing_module
+
+# Exposer les ports nécessaires
+EXPOSE 5000
+
+# Créer un volume pour la base de données
+# VOLUME ["/app/YAM_events.db"]
+
+# Script d'entrée pour démarrer les services
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]

@@ -1,0 +1,53 @@
+# Compiled Python files
+__pycache__/
+*.pyc
+
+playground*.py
+
+# Log files and directories
+logs/*
+!logs/.gitkeep
+!logs/api/
+!logs/api/.gitkeep
+!logs/indexing/
+!logs/indexing/.gitkeep
+
+# Ignore log files
+*.log
+*.log.*
+*.log.1
+*.log.2
+*.log.3
+*.log.4
+*.log.5
+
+config.json
+
+#venv
+venv/
+.venv/
+env/
+.env/
+
+# Pour le frontend Vue.js
+UI/node_modules/
+UI/dist/
+UI/.env.local
+
+# Node modules
+node_modules/
+
+# Generated files
+yam-events-tracker/generated/
+yam-events-tracker/build/
+dist/
+.cache/
+.graphclient/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# OS-specific
+.DS_Store

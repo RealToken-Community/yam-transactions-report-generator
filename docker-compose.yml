@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    container_name: yam_report_api
+    ports:
+      - "3599:5000"
+    volumes:
+      - ./config.json:/app/config.json
+      - ./YAM_events.db:/app/YAM_events.db
+    restart: always
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile-ui
+    container_name: yam_report_ui
+    ports:
+      - "3598:80"
+    volumes:
+    restart: always
