@@ -17,5 +17,4 @@ services:
     container_name: yam_report_ui
     ports:
       - "3598:80"
-    volumes:
     restart: always
