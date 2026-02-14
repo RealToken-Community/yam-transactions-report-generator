@@ -4,80 +4,121 @@
 
 - [Overview](#overview)
 - [System Requirements](#system-requirements)
-- [Installation Guide](#installation-guide)
-  - [Step 1 – Configure config.json](#step-1--configure-configjson)
-  - [Step 2 – Install Python Dependencies](#step-2--install-python-dependencies)
-  - [Step 3 – Install Frontend Dependencies](#step-3--install-frontend-dependencies)
-  - [Step 4 – Initialize the Indexing Module](#step-4--initialize-the-indexing-module)
-- [Running the Project](#running-the-project)
-  - [Start the Indexing Service](#start-the-indexing-service)
-  - [Start the API Server](#start-the-api-server)
-  - [Start the Web Interface](#start-the-web-interface)
-- [Technical Analysis and Module Details](#technical-analysis-and-module-details)
-  - [Indexing Module (Python)](#indexing-module-python)
-  - [API & PDF Generation Module (Python)](#api--pdf-generation-module-python)
-    - [Endpoints](#endpoints)
-      - [`/health` – Health Check](#health--health-check)
-      - [`/generate-report` – Generate PDF Report](#generate-report--generate-pdf-report)
-  - [Frontend Interface (Vue 3 + Vuetify)](#frontend-interface-vue-3--vuetify)
-    - [Technologies Used](#technologies-used)
-    - [Features](#features)
+- [Prerequisites and Configuration](#prerequisites-and-configuration)
+- [Installation & Execution](#installation--execution)
+  - [Option A — Docker (Recommended)](#option-a--docker-recommended)
+  - [Option B — Manual Installation (Without Docker)](#option-b--manual-installation-without-docker)
+- [API Details: PDF Generation](#api-details-pdf-generation)
+  - [Endpoints](#endpoints)
+- [Frontend Interface (Vue 3 + Vuetify)](#frontend-interface-vue-3--vuetify)
 
 ## Overview
 
 This project enables users to generate comprehensive PDF reports of all their **YAM v1** transactions on the Gnosis blockchain.
 
-This project consists of **3 core modules**:
+This project consists of **2 modules**:
 
-1. **Indexing Module** (Python) – Tracks and stores all YAM blockchain transactions in a local database.  
-2. **API & PDF Generation Module** (Python) – Provides an API endpoint to generate and download PDF reports.  
-3. **Frontend Interface** (Vue.js + Vuetify) – A minimal UI that allows the user to enter their parameters and download the PDF.
+1. **PDF Generation API** (Python) – Provides an API endpoint to generate and download PDF reports.  
+2. **Frontend Interface** (Vue.js + Vuetify) – A minimal UI that allows the user to enter their parameters and download the PDF.
 
 ---
 
 ## System Requirements
 
-- Python 3.9+
+- Python 3.11+
 - Node.js 18+
+- Docker & Docker Compose (optional but recommended)
 
 ---
 
-## Installation Guide
+## Prerequisites and configuration
 
-### Step 1 – Configure *config.json*
+### Prerequisites
 
-Upload to the root project directory the `config.json` file. See the `config_example.json` as a template to complete:
+This project cannot function on its own. It depends on an external postgres database generated and maintained by the **YAM Indexing** project. The YAM Indexing application must be installed and running on its own.
 
-```json
-{
-    "w3_urls": [
-        "https://gnosis-mainnet.blastapi.io/...",
-        "https://lb.nodies.app/v1/...",
-        "https://gnosis-mainnet.core.chainstack.com/..."
-      ],
-    "db_path": "YAM_events.db",
-    "api_port" : 5000,
-    "realtokens_api_url" : "https://api.realtoken.community/v1/token",
-    "the_graph_api_key" : "...",
-    "subgraph_url" : "https://gateway.thegraph.com/api/subgraphs/id/7xsjkvdDtLJuVkwCigMaBqGqunBvhYjUSPFhpnGL1rvu"
-}
+For more information, see the [yam-indexing](https://github.com/RealToken-Community/yam-indexing) project.
+
+
+### Configure Environment Variables
+
+An example configuration file is provided: `.env.example`.  
+Copy it to `.env` and update the values with your own secrets.
+
+```env
+REALTOKENS_API_URL=https://api.realtoken.community/v1/token
+
+API_PORT_INTERNAL=5000
+
+# Allow any app from realtoken.community (*.realtoken.community)
+CORS_ORIGIN_REGEX=^https?://([a-z0-9-]+\.)*realtoken\.community$
+# or allow any origin
+#CORS_ORIGIN_REGEX=.*
+
+# Postgres DB
+POSTGRES_DB=yam_events
+POSTGRES_HOST=host.docker.internal
+POSTGRES_PORT=5432
+POSTGRES_READER_USER_NAME=yam-indexing-reader
+POSTGRES_READER_USER_PASSWORD=
+
+# Telegram alerts [optional]
+TELEGRAM_ALERT_BOT_TOKEN=
+TELEGRAM_ALERT_GROUP_ID=
 ```
 
-2. **Install Python Dependencies**
+> **Note:**    
+> For alerts, you can configure a Telegram bot and a Telegram group: the bot (using `TELEGRAM_ALERT_BOT_TOKEN`) must be added to the telegram chat group (`TELEGRAM_ALERT_GROUP_ID`) to receive automatic notifications about critical events such as failures or application stops.
+
+## Installation & Execution
+
+### Option A — Docker (Recommended)
+
+The project includes a **ready-to-use Docker integration**.
+
+From the **project root directory** (where `docker-compose.yml` is located), build
+(or rebuild) and start the service with:
+
+```bash
+docker compose up --build -d
+```
+
+This single command:
+- Rebuilds the image if the source code changed
+- Recreates the existing container without duplication
+- Starts the service from a clean state
+
+
+
+To stop the service:
+
+```bash
+docker compose stop
+```
+
+> For detailed information about what is happening inside the Docker container, see the section below.
+
+### Option B — Manual Installation (Without Docker)
+
+#### 1. Create and Activate a Python Virtual Environment
 
 ```bash
 # Optional but recommended: create and activate a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
+```
 
-# Install packages listed in requirements.txt
+#### 2. Install python (API) Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-3. **Install Frontend Dependencies**
+
+#### 3. **Install Frontend Dependencies**
 
 ```bash
-# Change directory to the 'UI' folder (where the frontend code is
+# Change directory to the 'UI' folder (where the frontend code is)
 cd UI
 
 # Install all dependencies listed in package.json and build the UI
@@ -85,42 +126,49 @@ npm install
 npm run build
 ```
 
-4. **Initialize the indexing module**  
-(database creation and historical data backfill - this step might take a while)
+
+#### 4. Running the Project
+
+>When not using the recommended Docker setup, the different application instances must be managed independently. This includes running the Python-based API as a dedicated process, as well as building the frontend assets and serving them through a web server of choice. Each instance must be started, configured, and maintained separately.
+
+##### Running the API Server
+
+The API can be started in different ways depending on the operating system and execution context. Below are the supported commands.
+
 ```bash
-python3 -m yam_indexing_module.initialize_indexing_module
+# Linux (Production-like setup)
+gunicorn -w 1 --threads 1 -b 0.0.0.0:5000 API.core.app:create_app()
+
+# Windows (Production)
+waitress-serve --listen=0.0.0.0:5000 --threads=1 --call "API.core.app:create_app"
+
+# Windows (dev mode)
+python -m API.core.dev_run_api
 ```
 
----
-
-## Running the Project
-
->Since multiple components need to run simultaneously, consider using screen or tmux to keep each process running in its own terminal session. This is especially helpful on remote servers or when you want processes to keep running after you disconnect.
-
-#### Start the Indexing Service
-```bash
-python3 -m yam_indexing_module.main_indexing
+Once the API is running, its availability can be checked using the health endpoint:
+```text
+http://<your-domain>:<public-api-port>/api/health
 ```
 
-#### Start the API Server
-```bash
-python3 pdf_generator_module/start_api.py
-```
-You can verify that the API server is running by visiting the following health check endpoint in your browser:
-```http://[your-domain]:[public-api-port]/api/health```
-> **Note**:
-> - The **internal port** on which the API actually listens is defined in the `config.json` file under the key `api_port`. This is the port your API process binds to inside the container or on the server.
+>**Note on port Configuration and Environment Variables**
+>The API and the frontend rely on different environment variables to determine which ports are used internally and which are exposed publicly.
 >
-> - The **public API port**, i.e., the one exposed to the outside world and used by the frontend (UI), is defined in the environment file:
->   - In development, it's set in `.env.development` as `VITE_API_PORT`
->   - In production, it's set in `.env.production` as `VITE_API_PORT`
+>- **API internal port**  
+>  The port on which the API process listens is defined in the `.env` file using the `API_PORT_INTERANL` variable.
 >
-> - In development, the `VITE_API_PORT` value typically **matches** the `api_port` in `config.json`, since no reverse proxy is used (e.g., both set to `5000`).
+>- **Public API port (used by the frontend)**  
+>  The port used by the frontend (UI) to reach the API is defined by `VITE_API_PORT`:
+>  - In production, this is set in `.env.production`
+>  - In development, this is set in `.env.development`
 >
-> - In production, they may **differ**: the API might listen internally on a port like `5000` (from `config.json`), while a reverse proxy like Nginx forwards public traffic from port `443` (or another) to this internal port.  
->   The frontend uses `VITE_API_PORT` to know which port to call.
+>  For standard configurations, this value can be set to `80` or `443`, allowing API calls without explicitly specifying a port in the URL.
+>
+>- **Development vs Production behavior**  
+>  In development, `VITE_API_PORT` usually matches `API_PORT_INTERANL` since no reverse proxy is involved (for example, both set to `5000`).  
+>  In production, these values often differ: the API may listen internally on a port such as `5000`, while a reverse proxy (e.g. Nginx) exposes the API publicly on port `443` and forwards traffic to the internal port.
 
-#### Start the Web Interface
+##### Running the Web Interface
 The frontend is built as static files located in the ```UI/dist``` directory after running ```npm run build```.
 Deploy these static files using your existing web server infrastructure (Nginx, Apache, IIS, etc.) or cloud hosting service. The specific deployment method depends on your infrastructure setup and is outside the scope of this guide.
 
@@ -128,52 +176,8 @@ Deploy these static files using your existing web server infrastructure (Nginx, 
 
 ---
 
-## Technical analysis and module details
 
-### Indexing Module (Python)
-
-This module is responsible for tracking all YAM v1 transactions on the Gnosis blockchain and storing them in a local SQLite database.
-
-#### How It Works
-
-#### Initialization script
-
-1. **Database Initialization**  
-   A one-time script initializes the local database by creating three core tables:
-
-   - `offers`: stores all offers ever created on the YAM contract along with their status (In progress, sold out, deleted).
-   - `offer_events`: stores all events related to each offer (creation, modification, purchase, deletion).
-   - `indexing_status`: tracks the indexing progress by recording the last indexed block.
-
-2. **Historical Backfill with The Graph**  
-   Within this initialization script, the module queries a YAM-specific subgraph hosted on The Graph. This allows for a full backfill of past transactions from the contract’s deployment up to the latest block, ensuring historical completeness.
-
-#### Main script to run the indexing service
-
-1. **Startup Synchronization**  
-   When the indexing service starts, it checks for any gap between the last indexed block and the current head of the blockchain. If needed, it fills the gap using The Graph to ensure continuity.
-
-2. **Live Indexing Loop**  
-   The core of the module runs in a continuous loop. It:
-
-   - Fetches raw logs directly from the Gnosis blockchain using RPC endpoints.
-   - Automatically switches between multiple RPCs if one fails.
-   - Decodes the logs into structured event data.
-   - Stores the results in the appropriate database tables.
-
-3. **Periodic Backfill & Health Checks**  
-   Every few cycles, the module performs a short backfill (e.g., the last few hours) via The Graph to ensure no transactions were missed. (This is also useful to confirm that the subgraph is still being actively used so that The Graph indexers won’t stop indexing)
-
-#### Other considerations
-
-**Data Format**  
-   The database is designed to reflect raw on-chain data as closely as possible. For instance, numeric fields are stored in `uint256` format to avoid data loss or misinterpretation.
-
-**Scalable and Resilient to Third-Party Failures**  
-   The app’s indexing logic is built to scale: it performs a fixed number of RPC and subgraph queries, regardless of how many users or transactions there are. This means the system won’t generate more load—or require a paid plan—as usage grows. All user queries rely on a local database that stays up to date via a background sync, not per-user reads from The Graph or the chain.  
-   In addition, this setup has the advantage of being resilient to downtimes of third-party indexers like The Graph. Since the app queries its own database instead of relying on external services at runtime, it continues to function normally even if those indexers become unavailable.
-
-### API & PDF Generation Module (Python)
+## API details: PDF generation
 
 This module provides a RESTful API (using flask python library) to generate PDF reports. The PDF is generated using the `reportlab` library and includes detailed transaction data over a given date range.
 
@@ -215,21 +219,19 @@ This module provides a RESTful API (using flask python library) to generate PDF 
 - **`display_tx_column`** (`boolean`): whether to display the transaction hash column in the final PDF.
 
 > Note: the module can be run in dev mode using the following command:  
-```python3 -m pdf_generator_module.api.dev_run_api```
+```python3 -m api.core.dev_run_api```
 
-### Frontend Interface (Vue 3 + Vuetify)
+## Frontend Interface (Vue 3 + Vuetify)
 
 This is the front-end module for the YAM transaction PDF generator. It provides a modern, mobile-friendly interface allowing users to select wallet addresses, date ranges, transaction types, and other display options. The UI then submits these parameters to the backend API and downloads a customized PDF report.
 
-
-
-#### Technologies Used
+### Technologies Used
 
 - **Vue 3** with Composition API
 - **Vuetify 3** for material design components
 - **Custom styling** for a gradient hero section and elegant glassmorphic UI
 
-#### Features
+### Features
 
 - Add one or more **Ethereum wallet addresses**
 - Pick a **start and end date** (with validation)
