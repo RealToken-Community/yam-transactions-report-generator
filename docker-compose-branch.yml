@@ -20,7 +20,7 @@ services:
     networks:
       - yam-report
       - traefik-realt
-      - yam-events-db-shared-network
+      - yam-graph
 
     volumes:
       - yam-report-api-logs:/app/logs
@@ -51,5 +51,5 @@ networks:
   yam-report:
   traefik-realt:
     external: true
-  yam-events-db-shared-network:
+  yam-graph:
     external: true
