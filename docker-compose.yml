@@ -6,10 +6,14 @@ services:
     container_name: yam_report_api
     ports:
       - "3599:5000"
+    env_file:
+      - .env
     volumes:
-      - ./config.json:/app/config.json
-      - ./YAM_events.db:/app/YAM_events.db
-    restart: always
+      - yam-report-api-logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - yam-graph
+
   ui:
     build:
       context: .
@@ -17,4 +21,11 @@ services:
     container_name: yam_report_ui
     ports:
       - "3598:80"
-    restart: always
+    restart: unless-stopped
+
+volumes:
+  yam-report-api-logs:
+
+networks:
+  yam-graph:
+    external: true

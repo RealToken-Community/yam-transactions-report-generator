@@ -10,17 +10,17 @@ jobs:
     name: Validate branch
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: "3.11"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install Python dependencies
         run: |
@@ -30,16 +30,16 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd UI
-          npm install
+          npm ci
 
       - name: Build frontend
         run: |
           cd UI
           npm run build
 
-      # Optionnel : Ajouter des tests ici si disponibles
+      # Optionnel : tests
       # - name: Run backend tests
-      #   run: pytest
+      #   run: pytest -q
 
   deploy:
     name: Deploy to branch
@@ -97,6 +97,20 @@ jobs:
           DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
           DOCKER_PASSWD: ${{ secrets.DOCKER_PASSWD }}
           DOMAIN_URL: ${{ secrets.DOMAIN_URL }}
+
+          REALTOKENS_API_URL: ${{ vars.REALTOKENS_API_URL }}
+          API_PORT_INTERNAL: ${{ vars.API_PORT_INTERNAL }}
+          CORS_ORIGIN_REGEX: ${{ vars.CORS_ORIGIN_REGEX }}
+
+          # Postgres
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
+          POSTGRES_READER_USER_NAME: ${{ vars.POSTGRES_READER_USER_NAME }}
+          POSTGRES_READER_USER_PASSWORD: ${{ secrets.POSTGRES_READER_USER_PASSWORD }}
+
+          TELEGRAM_ALERT_BOT_TOKEN: ${{ secrets.TELEGRAM_ALERT_BOT_TOKEN }}
+          TELEGRAM_ALERT_GROUP_ID: ${{ vars.TELEGRAM_ALERT_GROUP_ID }}
         run: |
           if [[ "$DOCKER_BRANCH" == "main" ]]; then
             export HOSTNAME="yam-report.$DOMAIN_URL"
@@ -105,17 +119,31 @@ jobs:
           else
             export HOSTNAME="yam-report.$DOCKER_BRANCH.$DOMAIN_URL"
           fi
-
+        
           ssh staging <<EOF
             set -euxo pipefail
+        
             export DOCKER_BRANCH="$DOCKER_BRANCH"
             export DOCKER_REGISTRY="$DOCKER_REGISTRY"
-
-            cd /var/docker/yam-report/$DOCKER_BRANCH
-            git pull origin $DOCKER_BRANCH
-            docker compose --file docker-compose-branch.yml pull
+            export HOSTNAME="$HOSTNAME"
+        
+            export REALTOKENS_API_URL="$REALTOKENS_API_URL"
+            export API_PORT_INTERNAL="$API_PORT_INTERNAL"
+            export CORS_ORIGIN_REGEX="$CORS_ORIGIN_REGEX"
+        
+            export POSTGRES_DB="$POSTGRES_DB"
+            export POSTGRES_HOST="$POSTGRES_HOST"
+            export POSTGRES_PORT="$POSTGRES_PORT"
+            export POSTGRES_READER_USER_NAME="$POSTGRES_READER_USER_NAME"
+            export POSTGRES_READER_USER_PASSWORD="$POSTGRES_READER_USER_PASSWORD"
+        
+            export TELEGRAM_ALERT_BOT_TOKEN="$TELEGRAM_ALERT_BOT_TOKEN"
+            export TELEGRAM_ALERT_GROUP_ID="$TELEGRAM_ALERT_GROUP_ID"
+        
+            cd /var/docker/yam-report/\$DOCKER_BRANCH
+            git pull origin \$DOCKER_BRANCH
+        
             docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWD" $DOCKER_REGISTRY
-
-            HOSTNAME="$HOSTNAME" \
-            docker compose --project-name $DOCKER_BRANCH-yam-report --file docker-compose-branch.yml up -d
+        
+            docker compose --project-name \$DOCKER_BRANCH-yam-report --file docker-compose-branch.yml pull
           EOF
