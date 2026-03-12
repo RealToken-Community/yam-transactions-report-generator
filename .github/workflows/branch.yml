@@ -100,6 +100,7 @@ jobs:
 
           REALTOKENS_API_URL: ${{ vars.REALTOKENS_API_URL }}
           API_PORT_INTERNAL: ${{ vars.API_PORT_INTERNAL }}
+          CORS_ORIGIN_REGEX: ${{ vars.CORS_ORIGIN_REGEX }}
 
           # Postgres
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
@@ -128,6 +129,7 @@ jobs:
         
             export REALTOKENS_API_URL="$REALTOKENS_API_URL"
             export API_PORT_INTERNAL="$API_PORT_INTERNAL"
+            export CORS_ORIGIN_REGEX="$CORS_ORIGIN_REGEX"
         
             export POSTGRES_DB="$POSTGRES_DB"
             export POSTGRES_HOST="$POSTGRES_HOST"
