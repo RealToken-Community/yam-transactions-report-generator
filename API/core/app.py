@@ -5,6 +5,7 @@ from .services.realtokens_data import start_realtokens_updater
 from API.logging.logging_config import setup_logging
 from API.logging.send_telegram_alert import send_telegram_alert
 from API.logging.shutdown_handler import install_signal_handlers
+from API.query_db import test_postgres_connection
 import logging
 import json
 
@@ -50,6 +51,9 @@ def create_app():
 
     # Maximum size of paylaod (128 KB)
     app.config["MAX_CONTENT_LENGTH"] = 128 * 1024
+
+    if not test_postgres_connection(POSTGRES_DATA):
+        raise RuntimeError("Database connection failed")
     
     try:
         with open('Ressources/blockchain_contracts.json', 'r') as contracts_file:
