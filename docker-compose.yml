@@ -12,7 +12,7 @@ services:
       - yam-report-api-logs:/app/logs
     restart: unless-stopped
     networks:
-      - yam-events-db-shared-network
+      - yam-graph
 
   ui:
     build:
@@ -27,5 +27,5 @@ volumes:
   yam-report-api-logs:
 
 networks:
-  yam-events-db-shared-network:
+  yam-graph:
     external: true
