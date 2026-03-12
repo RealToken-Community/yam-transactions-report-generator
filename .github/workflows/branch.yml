@@ -146,4 +146,5 @@ jobs:
             docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWD" $DOCKER_REGISTRY
         
             docker compose --project-name \$DOCKER_BRANCH-yam-report --file docker-compose-branch.yml pull
+            docker compose --project-name \$DOCKER_BRANCH-yam-report --file docker-compose-branch.yml up -d --remove-orphans
           EOF
